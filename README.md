@@ -1,33 +1,40 @@
-# Simple Cipher
+# Simple Ciphers
 Simple cipher contains simple implementations of cryptography and cryptoanalysis on Caesar's Cipher, Vigenere's Cipher, and One Time Pads.
 
-## Authors
-- Emilio Popovits Blake (A01027265)
-- Eduardo Harari (A010)
+All three programs use the following alphabet: `'abcdefghijklmnopqrstuvwxyz '`.
+
+`caesar.py` and `vigenere.py` both assume that the ciphertext is in english and use the following 5 words to cryptoanalyse and decipher a ciphertext with an unknown key:
+```
+[' the ', ' be ', ' to ', ' of ', ' and ']
+```
+> A list of 100 words that occur most frequently in written English is given below, based on an analysis of the Oxford English Corpus. 
+[Source](https://en.wikipedia.org/wiki/Most_common_words_in_English)
+
+## Abilities Mastered
+- Enciphering and Deciphering a plaintext/ciphertext with a key using Caesar's Cipher, Vigenere's Cipher, and a One Time Pad
+- Implementation of Caesar's Cipher, Vigenere's Cipher, and One Time Pad
+- Decipher through cryptoanalysis a ciphertext with an unknown key enciphered with Caesar's Cipher or Vigenere's Cipher
 
 # Caesar's Cipher
-To decipher a ciphertext ciphered with Caesar's Cipher, the program uses the following table of the frequency of the letters of the alphabet in English:
+`caesar.py` can cipher a user's input plaintext with a given key, decipher a user's input ciphertext with a known given key, and find an unknown key for an input ciphertext ciphered with caesar's cipher (in this case the ciphertext is input as a `.txt` file in `./input` and chosen in the CLI).
 
-| Letter | Frequency | Proportions | Letter | Frequency | Proportions |
-|--------|-----------|-------------|--------|-----------|-------------|
-| E      | 11.1607%  | 56.88       | M      | 3.0129%   | 15.36       |
-| A      | 8.4966%   | 43.31       | H      | 3.0034%   | 15.31       |
-| R      | 7.5809%   | 38.64       | G      | 2.4705%   | 12.59       |
-| I      | 7.5448%   | 38.45       | B      | 2.0720%   | 10.56       |
-| O      | 7.1635%   | 36.51       | F      | 1.8121%   | 9.24        |
-| T      | 6.9509%   | 35.43       | Y      | 1.7779%   | 9.06        |
-| N      | 6.6544%   | 33.92       | W      | 1.2899%   | 6.57        |
-| S      | 5.7351%   | 29.23       | K      | 1.1016%   | 5.61        |
-| L      | 5.4893%   | 27.98       | V      | 1.0074%   | 5.13        |
-| C      | 4.5388%   | 23.13       | X      | 0.2902%   | 1.48        |
-| U      | 3.6308%   | 18.51       | Z      | 0.2722%   | 1.39        |
-| D      | 3.3844%   | 17.25       | J      | 0.1965%   | 1.00        |
-| P      | 3.1671%   | 16.14       | Q      | 0.1962%   | (1)         |
-<br />
-> The third column represents proportions, taking the least common letter (Q) as equal to 1. The letter E is over 56 times more common than Q in forming individual English words.
+The approach taken to cryptoanalyse and decipher an ciphertext with an unknown key is to assume that `' '` is one of the most occurrent characters in the ciphertext and proceeding to find the top most occurrent characters in the ciphertext.
 
-[Table Source](https://www3.nd.edu/~busiforc/handouts/cryptography/letterfrequencies.html)
+# Vigenere's Cipher
+`vigenere.py` can cipher a user's input plaintext with a given key, decipher a user's input ciphertext with a known given key, and find an unknown key for an input ciphertext (in this case the ciphertext is input as a `.txt` file in `./input` and chosen in the CLI).
 
-| a | b | c | d | e | f | g | h | i | j | k | l | m | n | o | p | q | r | s | t | u | v | w | x | y | z |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| f | g | h | i | j | k | l | m | n | o | p | q | r | s | t | u | v | w | x | y | z | a | b | c | d | e |
+**Note:** `vigenere.py` is made only to find unknown keys that are 4 characters in length and it assumes that the ciphertext is in english.
+
+When finding an unknown key for an input ciphertext, `vigenere.py` assumes that the original unknown plaintext has the following alphabet: `'abcdefghijklmnopqrstuvwxyz '` and does not contain line breaks or any other characters not included in the alphabet. It finds the unknown ciphertext through the following steps:
+
+1. Divides the ciphertext's characters into 4 groups (`'hello world'` would be divided into `[ ['h','o','r'],['e', ' ', 'l'],['l','w','d'],['l','o']`).
+2. Finds the top 4 most occurrent characters in each group.
+3. Assuming `' '` is one of the top 4 most occurrent characters in each group, it finds the appropriate shifts for each characacter of the top 4 most occurrent characters per group.
+4. Generates all the possible 4 lettered keys that the ciphertext could have (256 possible keys).
+5. Uses 4 threads that each decipher the text with 64 possible keys and count the number of appearances of the top 5 most common words in the english language (the, be, to, of, and), and each returns the key which had the most total matches of these substrings.
+6. Asks the user to pick one of the top 4 most possible plain texts and outputs the plaintext and key to a `.txt` file.
+
+# One Time Pad
+`onetimepad.py` will cipher a user's input plaintext with a randomly generated key which is the length of the user's input plaintext, and given the key and the ciphertext, it can decipher the ciphertext back into a plain text. 
+
+This program uses the function `vigenere(text, key, cipher)` and the only thing it does differently from `vigenere.py` is that it generates a completely random key which it inputs into that function to cipher the plaintext. `onetimepad.py` also uses the same function to decipher the given ciphertext with a given key.

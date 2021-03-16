@@ -6,44 +6,27 @@ import concurrent.futures
 
 alphabet = 'a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z, '.split(',')
 words = [' the ', ' be ', ' to ', ' of ', ' and ']
+lock = threading.Lock()
+result = []
 
-def threadDecipher(possibleKeyShifts, possibleKeyLetters, lettersByKey):
+def threadDecipher(possibleKeys, ciphertext):
     textMatches = 0
-    text = ''
+    plaintext = ''
     key = ''
-    for idx, shift in enumerate(possibleKeyShifts):
-            # Shift every letter in every group by appropriate shift
-            shiftedGroups = []
-            for i in range(4):
-                shiftedGroup = []
-                for letter in lettersByKey[i]:
-                    shiftedGroup.append(shiftLetter(letter, shift[i] * -1))
-                    shiftedGroups.append(shiftedGroup)
-            
-            test = [None] * (len(shiftedGroups[0])+len(shiftedGroups[1])+len(shiftedGroups[2])+len(shiftedGroups[3]))
-            for i in range(4):
-                test[i::4] = shiftedGroups[i]
-            
-            possibleText = ''.join(test)
-            possibleKey = possibleKeyLetters[idx]
+    for possibleKey in possibleKeys:
+            possibleText = vigenere(ciphertext, possibleKey, False)
             
             matches = 0
             for word in words:
                 matches += possibleText.count(word)
-            
-            print('Possible Shift: ', possibleKey)
-            print(lettersByKey[0][0:10])
-            print(shiftedGroups[0][0:10])
-            # print(shift[1])
-            # print(possibleKey)
-            # print(idx)
 
             if matches >= textMatches:
                 textMatches = matches
-                text = possibleText
+                plaintext = possibleText
                 key = possibleKey
     
-    return [key, textMatches, text]
+    with lock:
+        result.append( [key, textMatches, plaintext] )
 
 def shiftLetter(letter, shift):
     newIdx = alphabet.index(letter) + shift
@@ -108,11 +91,6 @@ if __name__ == "__main__":
         selectedFile = fileArray[int(prompt)-1]
         file = open('./input/' + selectedFile,)
 
-        # # Save all lines in selected file into array
-        # fileLines = []
-        # for line in file:
-        #     fileLines.append(line)
-
         # Save file line into string
         fileLine = file.read()
         file.close()
@@ -137,21 +115,14 @@ if __name__ == "__main__":
         
         # Order most occurring letters per group in dictionary => { 'g': 1092, 'l': 491, ' ': 389, ..., 'x': 2, 'f': 0 }
         s_occurrenceByKey = []
-        for i in range(4):
+        for i in range(len(occurrenceByKey)):
             occurrence = {}
             for idx, letter in enumerate(alphabet):
                 occurrence.update({ letter: occurrenceByKey[i][int(idx)] })
             s_occurrence = { key: value for key, value in sorted(occurrence.items(), key = lambda item: item[1], reverse=True ) }
             s_occurrenceByKey.append(s_occurrence)
         
-        # print(len(lettersByKey[0]))
-        # print(len(lettersByKey[1]))
-        # print(len(lettersByKey[2]))
-        # print(len(lettersByKey[3]))
         # print(s_occurrenceByKey[0])
-        # print(s_occurrenceByKey[1])
-        # print(s_occurrenceByKey[2])
-        # print(s_occurrenceByKey[3])
 
         # Get top 4 letter occurrences by group => group1: ['g', 'l', ' ', 'v'], ..., group4: ['j', 'o', 'c', 'y']
         top4PerGroup = [
@@ -163,155 +134,58 @@ if __name__ == "__main__":
 
         # print(top4PerGroup)
 
-        # Get possible keys by group, assuming ' ' is the most occuring character => for group1: ['g', 'l', ' ', 'v'] returns ['u', 'p', 'a', 'f']
+        # Get possible keys by group, assuming ' ' is the most occuring character => for group1: ['g', 'l', ' ', 'v'] returns ['h', 'm', 'a', 'w']
         keysByGroup = [
-            [ alphabet[ alphabet.index(' ') - alphabet.index(top4PerGroup[0][i])] for i in range(4) ],
-            [ alphabet[ alphabet.index(' ') - alphabet.index(top4PerGroup[1][i])] for i in range(4) ],
-            [ alphabet[ alphabet.index(' ') - alphabet.index(top4PerGroup[2][i])] for i in range(4) ],
-            [ alphabet[ alphabet.index(' ') - alphabet.index(top4PerGroup[3][i])] for i in range(4) ],
+            [ shiftLetter(top4PerGroup[0][i], 1) for i in range(len(top4PerGroup[0])) ],
+            [ shiftLetter(top4PerGroup[1][i], 1) for i in range(len(top4PerGroup[1])) ],
+            [ shiftLetter(top4PerGroup[2][i], 1) for i in range(len(top4PerGroup[2])) ],
+            [ shiftLetter(top4PerGroup[3][i], 1) for i in range(len(top4PerGroup[3])) ],
         ]
 
         # print(keysByGroup)
 
-        # Convert possible keys by group to shifts => for group1: ['u', 'p', 'a', 'f'] returns [20, 15, 0, 5]
-        shiftsByGroup = [
-            [ alphabet.index(keysByGroup[0][i]) for i in range(len(keysByGroup[0])) ],
-            [ alphabet.index(keysByGroup[1][i]) for i in range(len(keysByGroup[1])) ],
-            [ alphabet.index(keysByGroup[2][i]) for i in range(len(keysByGroup[2])) ],
-            [ alphabet.index(keysByGroup[3][i]) for i in range(len(keysByGroup[3])) ],
-        ]
-
-        # print(shiftsByGroup)
-
         # Get all possible key combinations that deciphers text (in this case, 4^4, or 256 possible combinations with the assumption that ' ' is in the top 4 common characters in text)
-        possibleKeyLetters = []
-        possibleKeyShifts = []
+        possibleKeys = []
         for i in range(len(keysByGroup[0])):
             for j in range(len(keysByGroup[1])):
                 for k in range(len(keysByGroup[2])):
                     for l in range(len(keysByGroup[3])):
-                        possibleKeyLetters.append(keysByGroup[0][i] + keysByGroup[1][j] + keysByGroup[2][k] + keysByGroup[3][l])
-                        possibleKeyShifts.append( [ shiftsByGroup[0][i], shiftsByGroup[1][j], shiftsByGroup[2][k], shiftsByGroup[3][l] ] )
+                        possibleKeys.append(keysByGroup[0][i] + keysByGroup[1][j] + keysByGroup[2][k] + keysByGroup[3][l])
         
-        # print(len(possibleKeyLetters))
-        # print(len(possibleKeyShifts))
-        # print(possibleKeyLetters)
-        # print(possibleKeyShifts)
+        # print(len(possibleKeys))
+        # print(possibleKeys)
 
-        # Divide possible keys into groups of 4 for a threaded 'brute-force' attempt solution => [possibleKeyLetters[0:64], possibleKeyLetters[64:128], possibleKeyLetters[128:192], possibleKeyLetters[192:256]]
-        threadKeyLetters = [
-            possibleKeyLetters[0:int(len(possibleKeyLetters)/4)],
-            possibleKeyLetters[int(len(possibleKeyLetters)/4):int(len(possibleKeyLetters)/4)*2],
-            possibleKeyLetters[int(len(possibleKeyLetters)/4)*2:int(len(possibleKeyLetters)/4)*3],
-            possibleKeyLetters[int(len(possibleKeyLetters)/4)*3:int(len(possibleKeyLetters))],
+        # Divide possible keys into groups of 4 for a threaded 'brute-force' attempt solution => [possibleKeys[0:64], possibleKeys[64:128], possibleKeys[128:192], possibleKeys[192:256]]
+        threadKeys = [
+            possibleKeys[0:int(len(possibleKeys)/4)],
+            possibleKeys[int(len(possibleKeys)/4):int(len(possibleKeys)/4)*2],
+            possibleKeys[int(len(possibleKeys)/4)*2:int(len(possibleKeys)/4)*3],
+            possibleKeys[int(len(possibleKeys)/4)*3:int(len(possibleKeys))],
         ]
 
-        # print(len(threadKeyLetters[0]), len(threadKeyLetters[1]), len(threadKeyLetters[2]), len(threadKeyLetters[3]))
-        # print(threadKeyLetters[0])
-        # print(threadKeyLetters)
+        # print(len(threadKeys[0]), len(threadKeys[1]), len(threadKeys[2]), len(threadKeys[3]))
+        # print(threadKeys[0])
+        # print(threadKeys)
+
+        # Get possible plaintext with most common word matches through threaded brute force on generated keys
+        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+            for threadIndex in range(4):
+                executor.submit(threadDecipher, threadKeys[threadIndex], fileLine)
+
+        # Show user top 4 possible plaintexts with most matches
+        for idx, possibleSolution in enumerate(result):
+            print('Possible Key ' + str(idx) + ': ', possibleSolution[0])
+            print('Common Word Matches: ', possibleSolution[1])
+            print('Part of Possible Text:', possibleSolution[2][0:30])
+            print()
         
-        # Divide possible keys into groups of 4 for a threaded 'brute-force' attempt solution => [possibleKeyShifts[0:64], possibleKeyShifts[64:128], possibleKeyShifts[128:192], possibleKeyShifts[192:256]]
-        threadKeyShifts = [
-            possibleKeyShifts[0:int(len(possibleKeyShifts)/4)],
-            possibleKeyShifts[int(len(possibleKeyShifts)/4):int(len(possibleKeyShifts)/4)*2],
-            possibleKeyShifts[int(len(possibleKeyShifts)/4)*2:int(len(possibleKeyShifts)/4)*3],
-            possibleKeyShifts[int(len(possibleKeyShifts)/4)*3:int(len(possibleKeyShifts))],
-        ]
+        # Ask user to pick the plaintext that is actually deciphered and output it to a file
+        choice = input('Which key deciphered the ciphertext? ')
         
-        # print(len(threadKeyShifts[0]), len(threadKeyShifts[1]), len(threadKeyShifts[2]), len(threadKeyShifts[3]))
-        # print(threadKeyShifts[0])
-        # print(threadKeyShifts)
+        outputFile = open('./output/' + selectedFile.split('.')[0] + '_plaintext.' + selectedFile.split('.')[1], 'w')
+        outputFile.write('Key: ' + result[int(choice)][0] + '\n')
+        outputFile.write('---------------------------------------\n')
+        outputFile.write(result[int(choice)][2])
+        outputFile.close()
 
-        test = threadDecipher(threadKeyShifts[0], threadKeyLetters[0], lettersByKey)
-        test1 = threadDecipher(threadKeyShifts[1], threadKeyLetters[1], lettersByKey)
-        test2 = threadDecipher(threadKeyShifts[2], threadKeyLetters[2], lettersByKey)
-        test3 = threadDecipher(threadKeyShifts[3], threadKeyLetters[3], lettersByKey)
-        print(test[0], test[1])
-        print(test1[0], test1[1])
-        print(test2[0], test2[1])
-        print(test3[0], test3[1])
-
-        # with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
-        #     for threadIndex in range(4):
-        #         executor.submit(query.threadedData, threadIndex)
-
-        '''
-        # Get key by group, assuming ' ' is the most occurring character => for ['g', ' ', 'b', 'j'] returns ['u', 'a', 'z', 'r']
-        # keyByGroup = [
-        #     alphabet[alphabet.index(' ') - ( alphabet.index(list(s_occurrenceByKey[0].keys())[0]) - alphabet.index('a') )],
-        #     alphabet[alphabet.index(' ') - ( alphabet.index(list(s_occurrenceByKey[1].keys())[0]) - alphabet.index('a') )],
-        #     alphabet[alphabet.index(' ') - ( alphabet.index(list(s_occurrenceByKey[2].keys())[0]) - alphabet.index('a') )],
-        #     alphabet[alphabet.index(' ') - ( alphabet.index(list(s_occurrenceByKey[3].keys())[0]) - alphabet.index('a') )],
-        # ]
-        '''
-
-        '''
-        # Turn key for every group into shifts => for ['u', 'a', 'z', 'r'] returns [20, 0, 25, 17]
-        shiftsByGroup = [
-            (alphabet.index(keyByGroup[i]) - alphabet.index('a')) for i in range(len(keyByGroup))
-        ]
-
-        # print(keyByGroup)
-        # print(shiftsByGroup)
-
-        # Shift every letter in every group by appropriate shift
-        shiftedGroups = []
-        for i in range(4):
-            shiftedGroup = []
-            for letter in lettersByKey[i]:
-                shiftedGroup.append(shiftLetter(letter, shiftsByGroup[i] * -1))
-            shiftedGroups.append(shiftedGroup)
-        
-        # print(lettersByKey[0][0])
-        # print(shiftedGroups[0][0])
-
-        # print(shiftedGroups[1][0])
-        # print(shiftedGroups[2][0])
-        # print(shiftedGroups[3][0])
-
-        # print(len(shiftedGroups[0]))
-        # print(len(shiftedGroups[1]))
-        # print(len(shiftedGroups[2]))
-        # print(len(shiftedGroups[3]))
-        '''
-
-        '''
-        # --------------------------------------- JOIN ALL GROUPS WITH KEY SHIFTS
-        test = [None] * (len(shiftedGroups[0])+len(shiftedGroups[1])+len(shiftedGroups[2])+len(shiftedGroups[3]))
-
-        for i in range(4):
-            test[i::4] = shiftedGroups[i]
-        
-        # print(''.join(test))
-        '''
-
-        # --------------------------------------------------- CAESAR SOLUTION
-        # fL = [ fileLine[i] for i in range(len(fileLine)) ]
-        # test = ''.join([ shiftLetter(letter, -10) for letter in fL ])
-        # print(fL)
-        # print(test)
-
-
-        
-    
-'''
-a b c d e f g h i j k l m n o p q r s t u v w x y z _
-g h i j k l m n o p q r s t u v w x y z _ a b c d e f
-k l m n o p q r s t u v w x y z _ a b c d e f g h i j
-o p q r s t u v w x y z _ a b c d e f g h i j k l m n
-y z _ a b c d e f g h i j k l m n o p q r s t u v w x
-
-gcgyiunyzjrybx
-gcgyiunyzjrybx
-
-gzzgiqfgzfjgbt
-
-a b c d e f g h i j k l m n o p q r s t u v w x y z _
-l m n o p q r s t u v w x y z _ a b c d e f g h i j k
-
-a b c d e f g h i j k l m n o p q r s t u v w x y z _
-------------------------------------------------------
-_ a b c d e f g h i j k l m n o p q r s t u v w x y z
-e f g h i j k l m n o p q r s t u v w x y z _ a b c d
-
-'''
+        print('Plaintext and key outputted to ./output/' + selectedFile.split('.')[0] + '_plaintext.' + selectedFile.split('.')[1])
