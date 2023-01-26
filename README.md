@@ -257,4 +257,4 @@ Project Link: [https://github.com/empobla/simpleCiphers](https://github.com/empo
 [linkedin-url]: https://linkedin.com/in/emilio-popovits
 
 [Python]: https://img.shields.io/badge/python-3776ab?style=for-the-badge&logo=python&logoColor=ffdc52
-[Python-url]: https://aws.amazon.com
+[Python-url]: https://www.python.org/
