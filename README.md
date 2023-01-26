@@ -53,13 +53,17 @@
     <li>
       <a href="#getting-started">Getting Started</a>
       <ul>
-        <li><a href="#prerequisites">Prerequisites</a></li>
         <li><a href="#installation">Installation</a></li>
       </ul>
     </li>
-    <li><a href="#usage">Usage</a></li>
-    <li><a href="#roadmap">Roadmap</a></li>
-    <li><a href="#contributing">Contributing</a></li>
+    <li>
+      <a href="#usage">Usage</a>
+      <ul>
+        <li><a href="#caesars-cipher-script">Caesar's Cipher Script</a></li>  
+        <li><a href="#vigeneres-cipher-script">Vigenere's Cipher Script</a></li>  
+        <li><a href="#one-time-pad-script">One Time Pad Script</a></li>  
+      </ul>
+    </li>
     <li><a href="#license">License</a></li>
     <li><a href="#contact">Contact</a></li>
     <li><a href="#acknowledgments">Acknowledgments</a></li>
@@ -158,7 +162,7 @@ To get a local copy up and running follow these simple example steps.
 <!-- USAGE EXAMPLES -->
 ## Usage
 
-### Caesar's Cipher
+### Caesar's Cipher Script
 With this script, you can: 
 1. Cipher a message with a key
 2. Decipher a message with a key
@@ -177,7 +181,7 @@ In order to run this script, follow the following instructions:
    python caesar.py
    ```
 
-### Vigenere's Cipher
+### Vigenere's Cipher Script
 With this script, you can: 
 1. Cipher a message with a key
 2. Decipher a message with a key
@@ -196,7 +200,7 @@ In order to run this script, follow the following instructions:
    python vigenere.py
    ```
 
-### One Time Pad
+### One Time Pad Script
 With this script, you can: 
 1. Cipher a message
 2. Decipher a message
